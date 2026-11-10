@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, Phone, Sparkles, X, ShieldCheck, LogOut, CheckCircle2, Ticket } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext.tsx';
 import { useDevasthanam } from '../context/DevasthanamContext.tsx';
@@ -33,6 +33,31 @@ export const DevoteeLoginModal: React.FC<DevoteeLoginModalProps> = ({
   const [nakshatram, setNakshatram] = useState('Rohini');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // Keep the page behind the dialog still, and allow Escape to close it.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPaddingRight;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleLogin = (e: React.FormEvent) => {
@@ -62,17 +87,17 @@ export const DevoteeLoginModal: React.FC<DevoteeLoginModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-md overflow-y-auto animate-fade-in"
+      className="devotee-modal-backdrop fixed inset-0 z-[120] flex items-start sm:items-center justify-center p-3 sm:p-5 bg-stone-950/80 backdrop-blur-md overflow-y-auto overscroll-contain animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md bg-gradient-to-b from-[#1c120a] via-[#24150c] to-[#120a06] border-2 border-amber-500/50 rounded-3xl p-6 sm:p-8 text-amber-50 shadow-2xl space-y-6 my-auto"
+        className="devotee-modal-panel relative w-full max-w-md max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2.5rem)] overflow-y-auto overscroll-contain bg-gradient-to-b from-[#1c120a] via-[#24150c] to-[#120a06] border-2 border-amber-500/50 rounded-3xl p-5 sm:p-8 text-amber-50 shadow-2xl space-y-6 my-2 sm:my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-600/40 transition-colors cursor-pointer"
+          className="sticky top-0 z-20 ml-auto -mt-1 -mb-10 flex w-fit p-2 rounded-full bg-amber-950/95 hover:bg-amber-900 text-amber-300 border border-amber-600/50 shadow-lg transition-colors cursor-pointer"
           aria-label="Close Devotee Login Modal"
         >
           <X className="w-4 h-4" />

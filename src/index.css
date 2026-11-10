@@ -194,3 +194,42 @@ button { -webkit-tap-highlight-color: transparent; }
   header button[aria-label="TVD Home"] { min-width: 0; gap: 8px; }
   header button[aria-label="TVD Home"] > div:first-child { width: 36px; height: 36px; flex: 0 0 36px; }
 }
+
+
+/* Devotee dialog: keep the complete frame inside the viewport and scroll the dialog,
+   never the page behind it. dvh handles mobile browser address-bar changes. */
+.devotee-modal-backdrop {
+  min-height: 100vh;
+  min-height: 100dvh;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+.devotee-modal-panel {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(217, 160, 70, .75) rgba(255, 255, 255, .08);
+  overscroll-behavior: contain;
+}
+.devotee-modal-panel::-webkit-scrollbar {
+  width: 8px;
+}
+.devotee-modal-panel::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, .06);
+  border-radius: 99px;
+}
+.devotee-modal-panel::-webkit-scrollbar-thumb {
+  background: rgba(217, 160, 70, .72);
+  border: 2px solid rgba(28, 18, 10, .85);
+  border-radius: 99px;
+}
+@media (max-width: 639px) {
+  .devotee-modal-backdrop {
+    align-items: flex-start;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .devotee-modal-panel {
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+    border-radius: 22px;
+  }
+}
