@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Menu, X, Globe, Shield, Calendar, BookOpen, Volume2, VolumeX, User } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext.tsx';
 import { useDevasthanam } from '../context/DevasthanamContext.tsx';
@@ -17,6 +18,28 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [devoteeModalOpen, setDevoteeModalOpen] = useState(false);
 
+  // A viewport-level drawer must not inherit the sticky header's stacking context.
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPaddingRight;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [mobileMenuOpen]);
+
   const handleNav = (view: string) => {
     onNavigate(view);
     setMobileMenuOpen(false);
@@ -24,7 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#fcfaf7]/95 backdrop-blur-md border-b border-amber-900/10 shadow-xs">
+    <header className="tvd-site-header sticky top-0 z-50 bg-[#fcfaf7]/95 backdrop-blur-md border-b border-amber-900/10 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-2 sm:gap-8 h-16 sm:h-20">
           {/* Zone 1: Brand Wordmark (Single element) */}
@@ -211,26 +234,43 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
         </div>
       </div>
 
-      {/* Mobile slide-in navigation drawer */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-[80] bg-stone-950/55 backdrop-blur-[2px]" onClick={() => setMobileMenuOpen(false)}>
+      {/* Viewport-level mobile navigation: rendered outside the sticky header. */}
+      {mobileMenuOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          className="tvd-mobile-nav-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setMobileMenuOpen(false);
+          }}
+        >
           <aside
-            className="mobile-nav-drawer absolute right-0 top-0 flex h-full w-[min(86vw,360px)] flex-col overflow-y-auto border-l border-amber-700/30 bg-[#fcf8f1] p-5 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
+            className="tvd-mobile-nav-drawer"
+            role="dialog"
+            aria-modal="true"
             aria-label="Mobile navigation"
           >
-            <div className="mb-6 flex items-center justify-between border-b border-amber-900/10 pb-4">
+            <div className="tvd-mobile-nav-header">
               <div>
                 <p className="font-cinzel text-lg font-bold text-amber-950">TVD</p>
                 <p className="font-tamil text-xs text-amber-800">திலகவிஷ்ணு தேவஸ்தானம்</p>
               </div>
-              <button onClick={() => setMobileMenuOpen(false)} className="rounded-full border border-amber-900/15 p-2 text-stone-700" aria-label="Close navigation"><X size={20} /></button>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="tvd-mobile-nav-close"
+                aria-label="Close navigation"
+              ><X size={20} /></button>
             </div>
-            <div className="mb-5 grid grid-cols-2 gap-2">
-              <button onClick={() => handleNav('darshan-booking')} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-amber-800 px-2 text-xs font-bold text-white shadow-lg shadow-amber-900/15"><Calendar size={15} />{t.btnBookDarshan}</button>
-              <button onClick={() => handleNav('pooja-booking')} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-100 px-2 text-xs font-bold text-amber-950"><BookOpen size={15} />{t.navPoojaBooking}</button>
+
+            <div className="grid grid-cols-2 gap-2 mb-5">
+              <button onClick={() => handleNav('darshan-booking')} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-amber-800 px-2 text-xs font-bold text-white shadow-lg shadow-amber-900/15">
+                <Calendar size={15} />{t.btnBookDarshan}
+              </button>
+              <button onClick={() => handleNav('pooja-booking')} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-100 px-2 text-xs font-bold text-amber-950">
+                <BookOpen size={15} />{t.navPoojaBooking}
+              </button>
             </div>
-            <nav className="flex flex-1 flex-col gap-1">
+
+            <nav className="tvd-mobile-nav-links">
               {[
                 { id: 'home', label: t.navHome },
                 { id: 'about-tvd', label: t.navAboutTvd },
@@ -245,17 +285,28 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 { id: 'contact', label: t.navContact },
                 { id: 'admin', label: t.navAdmin },
               ].map((item) => (
-                <button key={item.id} onClick={() => handleNav(item.id)} className={`flex min-h-11 items-center justify-between rounded-xl px-4 text-left text-sm font-medium transition ${currentView === item.id ? 'bg-amber-100 text-amber-950' : 'text-stone-700 hover:bg-amber-50'}`}>
-                  <span>{item.label}</span><span className="text-amber-700">›</span>
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleNav(item.id)}
+                  className={`tvd-mobile-nav-link ${currentView === item.id ? 'is-active' : ''}`}
+                >
+                  <span>{item.label}</span><span aria-hidden="true">›</span>
                 </button>
               ))}
             </nav>
-            <div className="mt-5 grid grid-cols-2 gap-2 border-t border-amber-900/10 pt-4">
-              <button onClick={toggleLanguage} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-900/15 text-xs font-semibold text-amber-950"><Globe size={15} />{language === 'en' ? 'தமிழ்' : 'English'}</button>
-              <button onClick={() => { setMobileMenuOpen(false); setDevoteeModalOpen(true); }} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-900/15 text-xs font-semibold text-amber-950"><User size={15} />Devotee</button>
+
+            <div className="grid grid-cols-2 gap-2 mt-5 border-t border-amber-900/10 pt-4">
+              <button onClick={toggleLanguage} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-900/15 text-xs font-semibold text-amber-950">
+                <Globe size={15} />{language === 'en' ? 'தமிழ்' : 'English'}
+              </button>
+              <button onClick={() => { setMobileMenuOpen(false); setDevoteeModalOpen(true); }} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-900/15 text-xs font-semibold text-amber-950">
+                <User size={15} />Devotee
+              </button>
             </div>
           </aside>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Devotee Login & Profile Modal */}
